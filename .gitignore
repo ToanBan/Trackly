@@ -1,0 +1,41 @@
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Build outputs
+backend/bin/
+backend/obj/
+**/bin/
+**/obj/
+
+# ASP.NET configuration files
+backend/appsettings.json
+backend/appsettings.Development.json
+backend/appsettings.*.json
+
+# Visual Studio / .NET
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Optional: keep local tool configs out
+*.local
