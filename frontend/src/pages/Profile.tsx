@@ -1,100 +1,290 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-
-const stats = [
-  { label: "Đang theo dõi", value: "12", tone: "text-slate-900" },
-  { label: "Đã đạt mục tiêu", value: "5", tone: "text-emerald-600" },
-  { label: "Link affiliate", value: "3", tone: "text-orange-500" },
-]
+import { useState, type FormEvent } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
+import {
+  User as UserIcon, Mail, Lock, LogOut, Pencil, Check, X, Eye, EyeOff,
+  ChefHat, UtensilsCrossed, Flame, Star, ShieldAlert, Camera, Sparkles,
+  TrendingUp, CalendarDays, CheckCircle2,
+} from "lucide-react"
 
 export default function Profile() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  /* ── Thông tin cá nhân (form chỉnh sửa) ── */
+  const [username, setUsername] = useState(user?.username ?? "")
+  const [email, setEmail] = useState(user?.email ?? "")
+  const [editing, setEditing] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  /* ── Đổi mật khẩu ── */
+  const [pw, setPw] = useState({ current: "", next: "", confirm: "" })
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false })
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#ece7ff_0%,#e4efff_26%,#e7edf5_100%)]">
+        <div className="rounded-3xl border border-violet-100 bg-white/90 p-10 text-center shadow-[0_20px_50px_rgba(167,139,250,0.15)]">
+          <UserIcon size={56} className="mx-auto text-violet-400" />
+          <h1 className="mt-4 text-3xl font-black text-slate-900">Bạn chưa đăng nhập</h1>
+          <p className="mt-2 text-slate-500">Đăng nhập để xem và quản lý hồ sơ của bạn.</p>
+          <button
+            onClick={() => navigate("/login")}
+            className="mt-6 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-8 py-3 font-bold text-white shadow-lg shadow-violet-200 transition hover:opacity-90"
+          >
+            Đi đến đăng nhập
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const initials = user.username
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+
+  const saveProfile = (e: FormEvent) => {
+    e.preventDefault()
+    // TODO: gọi API cập nhật hồ sơ khi sẵn sàng
+    setEditing(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  const changePassword = (e: FormEvent) => {
+    e.preventDefault()
+    setPwMsg(null)
+    if (!pw.current || !pw.next || !pw.confirm) {
+      setPwMsg({ ok: false, text: "Vui lòng điền đầy đủ cả 3 trường." })
+      return
+    }
+    if (pw.next.length < 6) {
+      setPwMsg({ ok: false, text: "Mật khẩu mới cần ít nhất 6 ký tự." })
+      return
+    }
+    if (pw.next !== pw.confirm) {
+      setPwMsg({ ok: false, text: "Mật khẩu nhập lại không khớp." })
+      return
+    }
+    // TODO: gọi API đổi mật khẩu khi sẵn sàng
+    setPw({ current: "", next: "", confirm: "" })
+    setPwMsg({ ok: true, text: "Đổi mật khẩu thành công!" })
+  }
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#ece7ff_0%,#e4efff_26%,#e7edf5_100%)] px-4 py-8 text-slate-800">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <header className="rounded-[28px] border border-violet-100 bg-white/90 p-5 shadow-[0_18px_45px_rgba(167,139,250,0.08)] backdrop-blur-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-cyan-600">Profile</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">Tài khoản của tôi</h1>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#ece7ff_0%,#e4efff_26%,#e7edf5_100%)] text-slate-800">
+      <div className="mx-auto max-w-5xl px-4 pb-16 pt-6">
+
+        {/* ── Header trang ── */}
+        <header className="flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-md shadow-cyan-200">
+              <UtensilsCrossed size={20} />
             </div>
-            <Badge className="border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-50">Thành viên từ 2026</Badge>
-          </div>
+            <span className="text-xl font-black tracking-tight text-slate-900">Trackly</span>
+          </Link>
+          <button
+            onClick={async () => { await logout(); navigate("/login") }}
+            className="flex items-center gap-2 rounded-full border border-rose-200 bg-white/80 px-4 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
+          >
+            <LogOut size={16} /> Đăng xuất
+          </button>
         </header>
 
-        <Card className="overflow-hidden border border-violet-100 bg-white/90 shadow-[0_18px_35px_rgba(167,139,250,0.08)]">
-          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
-            <Avatar className="h-16 w-16 border border-slate-200">
-              <AvatarImage src="https://placehold.co/100x100/f3f4f6/64748b?text=A" />
-              <AvatarFallback>NA</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-xl font-bold text-slate-900">Nguyễn Văn A</p>
-              <p className="text-sm text-slate-500">nguyenvana@email.com</p>
-            </div>
-            <Button className="rounded-full bg-cyan-500 text-white hover:bg-cyan-600">Cập nhật</Button>
-          </CardContent>
-        </Card>
+        {/* ── Hero card ── */}
+        <section className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-500 to-cyan-500 p-8 shadow-[0_25px_60px_rgba(139,92,246,0.35)]">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-cyan-300/20 blur-2xl" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "22px 22px" }} />
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {stats.map((item) => (
-            <Card key={item.label} className="border border-violet-100 bg-white/90 shadow-[0_12px_35px_rgba(167,139,250,0.08)]">
-              <CardContent className="p-5 text-center">
-                <p className={`text-3xl font-black ${item.tone}`}>{item.value}</p>
-                <p className="mt-2 text-sm text-slate-500">{item.label}</p>
-              </CardContent>
-            </Card>
+          <div className="relative flex flex-wrap items-center gap-6">
+            <div className="relative">
+              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/20 text-4xl font-black text-white shadow-inner backdrop-blur">
+                {initials}
+              </div>
+              <button className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-violet-600 shadow-lg transition hover:scale-110">
+                <Camera size={16} />
+              </button>
+              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2.5">
+                <h1 className="truncate text-3xl font-black text-white">{user.username}</h1>
+                <span className="flex items-center gap-1 rounded-full bg-amber-300/90 px-3 py-1 text-xs font-black text-amber-900">
+                  <Star size={12} /> THÀNH VIÊN VÀNG
+                </span>
+              </div>
+              <p className="mt-1 flex items-center gap-2 text-white/80">
+                <Mail size={15} /> {user.email}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white backdrop-blur">
+                  <CheckCircle2 size={13} /> Tài khoản hoạt động
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white backdrop-blur">
+                  <CalendarDays size={13} /> Tham gia từ 2025
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-white backdrop-blur">
+                  <Sparkles size={13} /> ID #{user.id}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-violet-600 shadow-lg transition hover:scale-[1.03] hover:bg-violet-50"
+            >
+              <Pencil size={16} /> Chỉnh sửa hồ sơ
+            </button>
+          </div>
+        </section>
+        {/* ── Thống kê nhanh ── */}
+        <section className="mt-5 grid gap-4 sm:grid-cols-3">
+          {[
+            { Icon: ChefHat, label: "Món đã theo dõi", value: "128", cls: "from-violet-500 to-fuchsia-500 shadow-violet-200" },
+            { Icon: Flame, label: "Chuỗi ngày liên tục", value: "14", cls: "from-orange-400 to-rose-500 shadow-rose-200" },
+            { Icon: TrendingUp, label: "Điểm tích luỹ", value: "2.350", cls: "from-cyan-400 to-blue-500 shadow-cyan-200" },
+          ].map(({ Icon, label, value, cls }) => (
+            <div key={label} className="flex items-center gap-4 rounded-3xl border border-white bg-white/85 p-5 shadow-[0_12px_30px_rgba(167,139,250,0.10)] backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(167,139,250,0.18)]">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${cls} text-white shadow-lg`}>
+                <Icon size={22} />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-slate-900">{value}</p>
+                <p className="text-xs font-semibold text-slate-500">{label}</p>
+              </div>
+            </div>
           ))}
         </section>
 
-        <Card className="border border-violet-100 bg-white/90 shadow-[0_18px_35px_rgba(167,139,250,0.08)]">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Thông tin cá nhân</CardTitle>
-            <CardDescription>Cập nhật họ tên và email của bạn</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-700">Họ tên</Label>
-              <Input id="name" defaultValue="Nguyễn Văn A" className="h-11 rounded-xl border-slate-200 bg-white text-slate-900" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">Email</Label>
-              <Input id="email" type="email" defaultValue="nguyenvana@email.com" className="h-11 rounded-xl border-slate-200 bg-white text-slate-900" />
-            </div>
-            <Button className="rounded-full bg-slate-900 text-white hover:bg-slate-800">Lưu thay đổi</Button>
-          </CardContent>
-        </Card>
+        {/* ── Nội dung 2 cột ── */}
+        <section className="mt-5 grid gap-5 lg:grid-cols-2">
 
-        <Card className="border border-violet-100 bg-white/90 shadow-[0_18px_35px_rgba(167,139,250,0.08)]">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Đổi mật khẩu</CardTitle>
-            <CardDescription>Nên dùng mật khẩu mạnh và khác với các tài khoản khác.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword" className="text-slate-700">Mật khẩu hiện tại</Label>
-              <Input id="currentPassword" type="password" placeholder="••••••••" className="h-11 rounded-xl border-slate-200 bg-white text-slate-900" />
+          {/* Thông tin cá nhân */}
+          <div className="rounded-3xl border border-violet-100 bg-white/90 p-6 shadow-[0_12px_30px_rgba(167,139,250,0.10)] backdrop-blur">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+                <UserIcon size={18} className="text-violet-500" /> Thông tin cá nhân
+              </h2>
+              {!editing && (
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 rounded-full bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-600 transition hover:bg-violet-100">
+                  <Pencil size={13} /> Sửa
+                </button>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword" className="text-slate-700">Mật khẩu mới</Label>
-              <Input id="newPassword" type="password" placeholder="Ít nhất 6 ký tự" className="h-11 rounded-xl border-slate-200 bg-white text-slate-900" />
-            </div>
-            <Button variant="outline" className="rounded-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50">Cập nhật mật khẩu</Button>
-          </CardContent>
-        </Card>
 
-        <Card className="border border-red-200 bg-red-50/80 shadow-[0_18px_35px_rgba(239,68,68,0.06)]">
-          <CardHeader>
-            <CardTitle className="text-red-600">Xoá tài khoản</CardTitle>
-            <CardDescription>Hành động này không thể hoàn tác.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="destructive" className="rounded-full">Xoá tài khoản của tôi</Button>
-          </CardContent>
-        </Card>
+            <form onSubmit={saveProfile} className="mt-5 space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Tên người dùng</span>
+                <div className="relative">
+                  <UserIcon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={!editing}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 font-semibold text-slate-800 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100 disabled:opacity-70"
+                  />
+                </div>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Email</span>
+                <div className="relative">
+                  <Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={!editing}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 font-semibold text-slate-800 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100 disabled:opacity-70"
+                  />
+                </div>
+              </label>
+
+              {editing ? (
+                <div className="flex gap-2 pt-1">
+                  <button type="submit" className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 py-3 font-bold text-white shadow-lg shadow-violet-200 transition hover:opacity-90">
+                    <Check size={17} /> Lưu thay đổi
+                  </button>
+                  <button type="button" onClick={() => { setEditing(false); setUsername(user.username); setEmail(user.email) }} className="flex items-center gap-1.5 rounded-full border border-slate-200 px-5 py-3 font-bold text-slate-600 transition hover:bg-slate-50">
+                    <X size={16} /> Huỷ
+                  </button>
+                </div>
+              ) : saved ? (
+                <p className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 py-3 text-sm font-bold text-emerald-600">
+                  <CheckCircle2 size={17} /> Đã lưu thay đổi!
+                </p>
+              ) : null}
+            </form>
+          </div>
+          {/* Đổi mật khẩu */}
+          <div className="rounded-3xl border border-violet-100 bg-white/90 p-6 shadow-[0_12px_30px_rgba(167,139,250,0.10)] backdrop-blur">
+            <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+              <Lock size={18} className="text-cyan-500" /> Đổi mật khẩu
+            </h2>
+
+            <form onSubmit={changePassword} className="mt-5 space-y-4">
+              {(
+                [
+                  { key: "current" as const, label: "Mật khẩu hiện tại" },
+                  { key: "next" as const, label: "Mật khẩu mới" },
+                  { key: "confirm" as const, label: "Nhập lại mật khẩu mới" },
+                ]
+              ).map(({ key, label }) => (
+                <label key={key} className="block">
+                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+                  <div className="relative">
+                    <Lock size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type={showPw[key] ? "text" : "password"}
+                      value={pw[key]}
+                      onChange={(e) => setPw({ ...pw, [key]: e.target.value })}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-11 font-semibold text-slate-800 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw({ ...showPw, [key]: !showPw[key] })}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                    >
+                      {showPw[key] ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </label>
+              ))}
+
+              {pwMsg && (
+                <p className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold ${pwMsg.ok ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                  {pwMsg.ok ? <CheckCircle2 size={17} /> : <X size={17} />} {pwMsg.text}
+                </p>
+              )}
+
+              <button type="submit" className="w-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 py-3 font-bold text-white shadow-lg shadow-cyan-200 transition hover:opacity-90">
+                Cập nhật mật khẩu
+              </button>
+            </form>
+          </div>
+        </section>
+
+        {/* ── Vùng nguy hiểm ── */}
+        <section className="mt-5 rounded-3xl border border-rose-200 bg-rose-50/70 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="flex items-center gap-2 font-black text-rose-700">
+                <ShieldAlert size={18} /> Vùng nguy hiểm
+              </h2>
+              <p className="mt-1 text-sm text-rose-600/80">Xoá tài khoản vĩnh viễn cùng toàn bộ dữ liệu. Hành động này không thể hoàn tác.</p>
+            </div>
+            <button
+              onClick={() => alert("Tính năng xoá tài khoản sẽ được kết nối API sau.")}
+              className="rounded-full border border-rose-300 bg-white px-6 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
+            >
+              Xoá tài khoản
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   )

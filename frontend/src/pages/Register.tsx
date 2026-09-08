@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ApiError } from "@/api/client"
+import { useAuth } from "@/context/AuthContext"
 
 export default function Register() {
   const [name, setName] = useState("")
@@ -13,6 +15,7 @@ export default function Register() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { register } = useAuth()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -35,10 +38,14 @@ export default function Register() {
 
     setLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700))
+      await register({ username: name, email, password, confirmPassword })
       navigate("/login")
-    } catch {
-      setError("Đăng ký thất bại. Vui lòng thử lại.")
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : "Đăng ký thất bại. Vui lòng thử lại.",
+      )
     } finally {
       setLoading(false)
     }

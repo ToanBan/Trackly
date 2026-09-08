@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ApiError } from "@/api/client"
+import { useAuth } from "@/context/AuthContext"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -11,6 +13,7 @@ export default function Login() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -23,10 +26,14 @@ export default function Login() {
 
     setLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700))
+      await login(email, password)
       navigate("/")
-    } catch {
-      setError("Sai email hoặc mật khẩu. Vui lòng thử lại.")
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : "Sai email hoặc mật khẩu. Vui lòng thử lại.",
+      )
     } finally {
       setLoading(false)
     }
