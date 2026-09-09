@@ -32,6 +32,9 @@ builder.Services.AddScoped<IUserSessionsRepository, UserSessionsRepository>();
 builder.Services.AddScoped<ICacheInterface, CacheService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ITablesRepository, TablesRepository>();
+builder.Services.AddScoped<IQrCodeInterface, QrCodeService>();
+builder.Services.AddScoped<TablesService>();
 
 // JWT authentication
 var accessSecret = builder.Configuration["Authentication:AccessToken:SecretKey"];
@@ -108,6 +111,8 @@ app.UseCors("Frontend");
 
 app.UseHttpsRedirection();
 
+// Serve static files from wwwroot (e.g. /qrcodes/*.png)
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 

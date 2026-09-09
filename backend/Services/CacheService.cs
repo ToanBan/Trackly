@@ -23,4 +23,11 @@ public class CacheService : ICacheInterface
         var isBlacklisted = await db.StringGetAsync($"bl:jti:{jti}");
         return isBlacklisted.HasValue && isBlacklisted == "true";
     }
+
+    public async Task<bool> CheckSessionTable(string slug)
+    {
+        var db = _redis.GetDatabase();
+        var session = await db.StringGetAsync($"table:session:{slug}");
+        return session.HasValue;
+    }
 }

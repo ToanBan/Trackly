@@ -10,4 +10,8 @@ public interface ITablesRepository{
 
     public Task<Tables?>GetTableByIdAsync(int id);
 
+    public Task<Tables>GetTableBySlugAsync(string slug);
+
+    public Task<List<Tables>>GetTablesAsync(int offset, int limit);
+
 }

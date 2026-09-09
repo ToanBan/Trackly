@@ -50,4 +50,25 @@ public class TablesRepository : ITablesRepository
         await _context.SaveChangesAsync();
         return existingTable;
     }
+
+
+    public async Task<Tables>GetTableBySlugAsync(string slug)
+    {
+        var table = await _context.Tables.FirstOrDefaultAsync(t => t.Slug == slug);
+
+        if(table == null)
+        {
+            throw new Exception("table not found");
+        }
+        return table;
+    }
+
+    public async Task<List<Tables>> GetTablesAsync(int offset, int limit)
+    {
+        return await _context.Tables
+            .OrderBy(t => t.Id)
+            .Skip(offset)
+            .Take(limit)
+            .ToListAsync();
+    }
 }

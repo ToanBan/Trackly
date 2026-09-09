@@ -21,6 +21,12 @@ public class JwtTokenService : IJwtTokenService
     private string RefreshSecret =>
         _configuration["Authentication:RefreshToken:SecretKey"] ?? "";
 
+    private string TableSecret =>
+        _configuration["Authentication:TableToken:TableSecret"] ?? "";
+
+    private int TableExpiryDays =>
+        int.Parse(_configuration["Authentication:TableToken:ExpirationDays"] ?? "1");
+
     private string Issuer => _configuration["Authentication:Issuer"] ?? "";
     private string Audience => _configuration["Authentication:Audience"] ?? "";
 
@@ -56,6 +62,31 @@ public class JwtTokenService : IJwtTokenService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public string GenerateTableToken(string slug)
+    {
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TableSecret)),
+            SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, slug.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: Issuer,
+            audience: Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(TableExpiryDays),
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+
+
 
     public string GenerateRefreshToken(int userId)
     {
@@ -134,6 +165,25 @@ public class JwtTokenService : IJwtTokenService
             Expires = DateTimeOffset.UtcNow.AddDays(RefreshExpiryDays)
         });
     }
+
+    public void AppendTableCookie(HttpResponse response, string tableToken)
+    {
+        response.Cookies.Append("tableToken", tableToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(TableExpiryDays)
+        });
+    }
+
+
+    public void ClearTableCookie(HttpResponse response)
+    {
+        response.Cookies.Delete("tableToken");
+    }
+
+
 
     public void ClearAuthCookies(HttpResponse response)
     {

@@ -4,4 +4,6 @@ public interface ICacheInterface
 {
     Task AddToBlacklistAsync(string jti, TimeSpan ttl);
     Task<bool> IsJtiBlacklistedAsync(string jti);
+
+    Task<bool>CheckSessionTable(string jti);
 }   
