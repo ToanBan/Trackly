@@ -1,18 +1,19 @@
 import type { Category, Dish, Table, Order, Staff, Customer } from "./types"
+
 export const initialCategories: Category[] = [
-  { id: 1, name: "Món chính", emoji: "🍚", dishes: 8 },
-  { id: 2, name: "Phở & Bún", emoji: "🍜", dishes: 6 },
-  { id: 3, name: "Món nướng", emoji: "🍢", dishes: 9 },
-  { id: 4, name: "Đồ uống", emoji: "🥤", dishes: 12 },
-  { id: 5, name: "Tráng miệng", emoji: "🍰", dishes: 5 },
+  { id: 1, name: "Món chính", description: null, imageUrl: null, isActive: true, dishes: 8 },
+  { id: 2, name: "Phở & Bún", description: null, imageUrl: null, isActive: true, dishes: 6 },
+  { id: 3, name: "Món nướng", description: null, imageUrl: null, isActive: true, dishes: 9 },
+  { id: 4, name: "Đồ uống", description: null, imageUrl: null, isActive: true, dishes: 12 },
+  { id: 5, name: "Tráng miệng", description: null, imageUrl: null, isActive: true, dishes: 5 },
 ]
 
 export const initialDishes: Dish[] = [
-  { id: 1, name: "Phở bò đặc biệt", category: "Phở & Bún", image: "https://placehold.co/80x80/e2e8f0/64748b?text=Phở", price: 55000, available: true },
-  { id: 2, name: "Bò nướng lá lốt", category: "Món nướng", image: "https://placehold.co/80x80/e2e8f0/64748b?text=Bò", price: 89000, available: true },
-  { id: 3, name: "Cơm tấm sườn nướng", category: "Món chính", image: "https://placehold.co/80x80/e2e8f0/64748b?text=Cơm", price: 45000, available: false },
-  { id: 4, name: "Sò điệp nướng", category: "Món nướng", image: "https://placehold.co/80x80/e2e8f0/64748b?text=Sò", price: 75000, available: true },
-  { id: 5, name: "Cà phê sữa đá", category: "Đồ uống", image: "https://placehold.co/80x80/e2e8f0/64748b?text=CF", price: 25000, available: false },
+  { id: 1, name: "Phở bò đặc biệt", description: null, imageUrl: "https://placehold.co/80x80/e2e8f0/64748b?text=Phở", price: 55000, isAvailable: true, categoryId: 2, categoryName: "Phở & Bún" },
+  { id: 2, name: "Bò nướng lá lốt", description: null, imageUrl: "https://placehold.co/80x80/e2e8f0/64748b?text=Bò", price: 89000, isAvailable: true, categoryId: 3, categoryName: "Món nướng" },
+  { id: 3, name: "Cơm tấm sườn nướng", description: null, imageUrl: "https://placehold.co/80x80/e2e8f0/64748b?text=Cơm", price: 45000, isAvailable: false, categoryId: 1, categoryName: "Món chính" },
+  { id: 4, name: "Sò điệp nướng", description: null, imageUrl: "https://placehold.co/80x80/e2e8f0/64748b?text=Sò", price: 75000, isAvailable: true, categoryId: 3, categoryName: "Món nướng" },
+  { id: 5, name: "Cà phê sữa đá", description: null, imageUrl: "https://placehold.co/80x80/e2e8f0/64748b?text=CF", price: 25000, isAvailable: false, categoryId: 4, categoryName: "Đồ uống" },
 ]
 
 export const initialTables: Table[] = []

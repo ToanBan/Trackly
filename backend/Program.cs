@@ -35,6 +35,10 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ITablesRepository, TablesRepository>();
 builder.Services.AddScoped<IQrCodeInterface, QrCodeService>();
 builder.Services.AddScoped<TablesService>();
+builder.Services.AddScoped<ICategoriesRepository, CategoriesRepository>();
+builder.Services.AddScoped<CategoriesService>();
+builder.Services.AddScoped<IDishRepository, DishesRepository>();
+builder.Services.AddScoped<DishesService>();
 
 // JWT authentication
 var accessSecret = builder.Configuration["Authentication:AccessToken:SecretKey"];

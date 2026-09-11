@@ -11,4 +11,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    // Proxy API + backend-served static images so the frontend talks same-origin.
+    // This eliminates the CORS / cross-origin cookie issues that broke the
+    // automatic access-token refresh flow (HttpOnly cookies are same-site now).
+    proxy: {
+      "/api": { target: "http://localhost:5289", changeOrigin: true },
+      "/categories": { target: "http://localhost:5289", changeOrigin: true },
+      "/dishes": { target: "http://localhost:5289", changeOrigin: true },
+    },
+  },
 })

@@ -6,7 +6,7 @@ import axios, {
 
 
 export const BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:5289/api"
+  import.meta.env.VITE_API_URL ?? "/api"
 
 
 const MAX_REFRESH_RETRIES = 1
@@ -30,7 +30,6 @@ export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
 })
 
 let refreshPromise: Promise<void> | null = null
@@ -74,7 +73,7 @@ api.interceptors.response.use(
       try {
         await doRefreshTokens()
       } catch {
-    
+        console.error("Auto refresh token failed; request will not be retried.", error.response?.status)
         return Promise.reject(new ApiError(status, message))
       }
 

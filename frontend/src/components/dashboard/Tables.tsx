@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react"
 import { createTable, deleteTable, getTables, updateTable, type Table as ApiTable } from "@/api/table"
 import { Plus, Pencil, Trash2, Download, QrCode, Armchair } from "lucide-react"
 import type { Table } from "./types"
-import { SectionTitle, ActionButton, Modal, ConfirmDialog, inputClass } from "./sharedUI"
+import { SectionTitle, ActionButton, Modal, ConfirmDialog, Field, inputClass } from "./sharedUI"
 export default function Tables() {
   const [items, setItems] = useState<Table[]>([])
   const [editing, setEditing] = useState<Table | null>(null)

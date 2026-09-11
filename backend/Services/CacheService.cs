@@ -19,9 +19,19 @@ public class CacheService : ICacheInterface
 
     public async Task<bool> IsJtiBlacklistedAsync(string jti)
     {
-        var db = _redis.GetDatabase();
-        var isBlacklisted = await db.StringGetAsync($"bl:jti:{jti}");
-        return isBlacklisted.HasValue && isBlacklisted == "true";
+        try
+        {
+            var db = _redis.GetDatabase();
+            var isBlacklisted = await db.StringGetAsync($"bl:jti:{jti}");
+            return isBlacklisted.HasValue && isBlacklisted == "true";
+        }
+        catch
+        {
+            // If Redis is temporarily unreachable, don't block authenticated requests
+            // (otherwise the JWT middleware would return 500 instead of 401 and break
+            // the frontend auto-refresh flow).
+            return false;
+        }
     }
 
     public async Task<bool> CheckSessionTable(string slug)

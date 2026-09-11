@@ -15,6 +15,9 @@ public class Dishes
 
     public bool IsAvailable {get;set;}
 
+    public required int UserId {get;set;}
+    public User? User {get;set;}
+
     public DateTime CreatedAt {get;set;}
 
     public Categories? categories {get;set;}
