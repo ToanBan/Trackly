@@ -4,6 +4,7 @@ namespace MyApi.Controllers;
 using MyApi.Services;
 using MyApi.Models;
 using MyApi.Interfaces;
+using MyApi.Middleware;
 
 [ApiController]
 [Route("api")]
@@ -20,6 +21,7 @@ public class TablesController : ControllerBase
     }
 
 
+    [Roles("admin")]
     [HttpPost("table/generate-qr")]
     public async Task<IActionResult> CreateTable(string tableNumber)
     {
@@ -45,6 +47,7 @@ public class TablesController : ControllerBase
   
 
 
+    [Roles("admin")]
     [HttpDelete("table/{Id}")]
     public async Task<IActionResult>DeleteTable(int Id)
     {

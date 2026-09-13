@@ -69,9 +69,15 @@ public class BillsRepository : IBillRepository
     {
         return await _context.Bills
             .Include(b => b.Orders)
+            .ThenInclude(o => o.Items)
             .OrderByDescending(b => b.Id)
             .Skip(offset)
             .Take(limit)
             .ToListAsync();
+    }
+
+    public async Task<int> GetBillsTotalAsync()
+    {
+        return await _context.Bills.CountAsync();
     }
 }

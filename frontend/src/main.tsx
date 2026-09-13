@@ -15,6 +15,12 @@ import Kitchen from "./pages/Kitchen.tsx";
 import Home from "./pages/Home.tsx";
 import DishDetail from "./pages/DishDetail.tsx";
 import Cart from "./pages/Cart.tsx";
+import RoleGuard from "./components/guards/RoleGuard.tsx";
+import type { User } from "./api/auth.ts";
+
+const isAdmin = (user: User) => (user.roles ?? []).includes("admin");
+const isStaffOrAdmin = (user: User) =>
+  (user.roles ?? []).some((r) => r === "staff" || r === "admin");
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
@@ -28,9 +34,23 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/register" element={<Register />} />
             <Route path="/result" element={<Result />} />
             <Route path="/discover" element={<Discover />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RoleGuard allow={isAdmin}>
+                  <Dashboard />
+                </RoleGuard>
+              }
+            />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/kitchen" element={<Kitchen />} />
+            <Route
+              path="/kitchen"
+              element={
+                <RoleGuard allow={isStaffOrAdmin}>
+                  <Kitchen />
+                </RoleGuard>
+              }
+            />
             <Route path="/cart" element={<Cart />} />
             </Routes>
           </CartProvider>

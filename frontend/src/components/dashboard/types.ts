@@ -1,5 +1,5 @@
 export type Section =
-  | "overview" | "categories" | "dishes" | "tables" | "orders" | "staff" | "loyalty"
+  | "overview" | "categories" | "dishes" | "tables" | "orders" | "bills" | "users" | "staff" | "loyalty"
 
 export type Category = {
   id: number

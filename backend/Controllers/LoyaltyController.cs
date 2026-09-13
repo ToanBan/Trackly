@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.Services;
+using MyApi.Middleware;
 
 namespace MyApi.Controllers;
 
@@ -15,6 +16,15 @@ public class LoyaltyController : ControllerBase
     public LoyaltyController(LoyaltyService loyaltyService)
     {
         _loyaltyService = loyaltyService;
+    }
+
+    [Authorize]
+    [Roles("admin")]
+    [HttpGet("loyalty/by-user/{userId:int}")]
+    public async Task<IActionResult> ByUser(int userId)
+    {
+        var loyalty = await _loyaltyService.GetLoyaltyByUserIdAsync(userId);
+        return Ok(new { userId, points = loyalty?.Points ?? 0 });
     }
 
     [Authorize]

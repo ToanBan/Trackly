@@ -6,10 +6,11 @@ import Overview from "../components/dashboard/Overview"
 import Categories from "../components/dashboard/Categories"
 import Dishes from "../components/dashboard/Dishes"
 import Tables from "../components/dashboard/Tables"
-import Orders from "../components/dashboard/Orders"
+import Bills from "../components/dashboard/Bills"
+import Users from "../components/dashboard/Users"
 import Staff from "../components/dashboard/Staff"
 import Loyalty from "../components/dashboard/Loyalty"
-
+import Orders from "@/components/dashboard/Orders"
 export default function Dashboard() {
   const [section, setSection] = useState<Section>("overview")
 
@@ -55,6 +56,8 @@ export default function Dashboard() {
         {section === "dishes" && <Dishes />}
         {section === "tables" && <Tables />}
         {section === "orders" && <Orders />}
+        {section === "bills" && <Bills />}
+        {section === "users" && <Users />}
         {section === "staff" && <Staff />}
         {section === "loyalty" && <Loyalty />}
       </main>

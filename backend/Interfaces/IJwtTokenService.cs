@@ -2,7 +2,7 @@ namespace MyApi.Interfaces;
 
 public interface IJwtTokenService
 {
-    string GenerateAccessToken(int userId, string email, string username);
+    string GenerateAccessToken(int userId, string email, string username, List<string> roles);
     string GenerateRefreshToken(int userId);
 
     string GenerateTableToken(string slug);

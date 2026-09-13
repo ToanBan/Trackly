@@ -9,5 +9,6 @@ public interface IBillRepository
     public Task<Bills?> GetBillByIdAsync(int id);
     public Task<Bills?> UpdateBillAsync(Bills bill);
     public Task<List<Bills>> GetBillsAsync(int offset, int limit);
+    public Task<int> GetBillsTotalAsync();
     public Task<Bills?> GetOpenBillForUpdateAsync(int tableId);
 }

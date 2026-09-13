@@ -3,9 +3,11 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using MyApi.Services;
+using MyApi.Middleware;
+
 namespace MyApi.Controllers;
 
-using MyApi.Services;
 using MyApi.DTOS;
 
 [ApiController]
@@ -20,6 +22,7 @@ public class CategoriesController : ControllerBase
     }
 
     [Authorize]
+    [Roles("admin")]
     [HttpPost]
     public async Task<IActionResult> CreateDish([FromForm] CreateCategory category)
     {
@@ -54,6 +57,7 @@ public class CategoriesController : ControllerBase
     }
 
 
+    [Roles("admin")]
     [HttpDelete("{Id}")]
     public async Task<IActionResult>DeleteCategoryById(int Id)
     {
@@ -61,6 +65,7 @@ public class CategoriesController : ControllerBase
         return Ok();
     }
 
+    [Roles("admin")]
     [HttpPut("{Id}")]
     public async Task<IActionResult>UpdateCategoryById(int Id, [FromBody] UpdateCategory category)
     {

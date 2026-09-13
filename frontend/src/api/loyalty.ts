@@ -19,3 +19,9 @@ export async function getMyLoyalty(): Promise<LoyaltyResponse> {
   const { data } = await api.get<LoyaltyResponse>("/loyalty/me");
   return data;
 }
+
+/** Lấy số điểm của một user cụ thể (dashboard khi xem hoá đơn). */
+export async function getUserPoints(userId: number): Promise<number> {
+  const { data } = await api.get<{ userId: number; points: number }>(`/loyalty/by-user/${userId}`);
+  return data.points;
+}

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.DTOS;
 using MyApi.Services;
+using MyApi.Middleware;
 
 namespace MyApi.Controllers;
 
@@ -19,14 +20,17 @@ public class BillsController : ControllerBase
     }
 
     [Authorize]
+    [Roles("admin", "staff")]
     [HttpGet("bills")]
     public async Task<IActionResult> GetBills(int page = 1, int limit = 10)
     {
         var bills = await _billsService.GetBillsAsync(page, limit);
-        return Ok(new { items = bills.Select(MapBill) });
+        var total = await _billsService.GetBillsTotalAsync();
+        return Ok(new { items = bills.Select(MapBill), total, page, limit });
     }
 
     [Authorize]
+    [Roles("admin", "staff")]
     [HttpGet("bills/{id}")]
     public async Task<IActionResult> GetBill(int id)
     {
@@ -41,6 +45,7 @@ public class BillsController : ControllerBase
         }
     }
 
+    [Roles("admin")]
     [HttpPost("bills/{id}/pay")]
     public async Task<IActionResult> PayBill(int id, [FromBody] PayBillDTO dto)
     {
@@ -92,7 +97,25 @@ public class BillsController : ControllerBase
             LoyaltyPointsEarned = b.LoyaltyPointsEarned,
             CreatedAt = b.CreatedAt,
             PaidAt = b.PaidAt,
-            OrderIds = b.Orders.Select(o => o.Id).ToList()
+            Orders = b.Orders.Select(o => new OrderResponse
+            {
+                Id = o.Id,
+                TableId = o.TableId,
+                UserId = o.UserId,
+                BillId = o.BillId,
+                Status = o.Status,
+                Subtotal = o.Subtotal,
+                CreatedAt = o.CreatedAt,
+                Items = o.Items.Select(i => new OrderItemResponse
+                {
+                    Id = i.Id,
+                    DishId = i.DishId,
+                    DishName = i.DishName,
+                    UnitPrice = i.UnitPrice,
+                    Quantity = i.Quantity,
+                    LineTotal = i.LineTotal
+                }).ToList()
+            }).ToList()
         };
     }
 }

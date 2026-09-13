@@ -67,16 +67,26 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   )
 }
 
-/* ── Modal xác nhận xoá ───────────────────────────────────── */
-export function ConfirmDialog({ title, message, onCancel, onConfirm }: {
+/* ── Modal xác nhận (xoá mặc định, có thể tuỳ nhãn & kiểu) ─────── */
+export function ConfirmDialog({ title, message, onCancel, onConfirm, confirmLabel = "Xoá", danger = true }: {
   title: string; message: string; onCancel: () => void; onConfirm: () => void
+  confirmLabel?: string; danger?: boolean
 }) {
   return (
     <Modal title={title} onClose={onCancel}>
       <p className="text-sm text-slate-600">{message}</p>
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onCancel} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50">Huỷ</button>
-        <button onClick={onConfirm} className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-red-200 transition hover:bg-red-600">Xoá</button>
+        <button
+          onClick={onConfirm}
+          className={
+            danger
+              ? "rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-red-200 transition hover:bg-red-600"
+              : "rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-violet-200 transition hover:opacity-90"
+          }
+        >
+          {confirmLabel}
+        </button>
       </div>
     </Modal>
   )
@@ -94,3 +104,37 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+
+/* ── Phân trang dùng chung ─────────────────────────────────── */
+export function Pagination({ page, total, limit, onPage }: {
+  page: number
+  total: number
+  limit: number
+  onPage: (p: number) => void
+}) {
+  const pages = Math.max(1, Math.ceil(total / limit))
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+      <span className="text-slate-500">
+        Trang <b className="text-slate-800">{page}</b> / {pages}
+        <span className="ml-2 text-slate-400">· {total} bản ghi</span>
+      </span>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPage(page - 1)}
+          disabled={page <= 1}
+          className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 font-bold text-slate-600 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          ‹ Trước
+        </button>
+        <button
+          onClick={() => onPage(page + 1)}
+          disabled={page >= pages}
+          className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 font-bold text-slate-600 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Sau ›
+        </button>
+      </div>
+    </div>
+  )
+}

@@ -13,5 +13,5 @@ public class BillResponse
     public int LoyaltyPointsEarned { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? PaidAt { get; set; }
-    public List<int> OrderIds { get; set; } = new();
+    public List<OrderResponse> Orders { get; set; } = new();
 }

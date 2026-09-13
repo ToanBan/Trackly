@@ -39,6 +39,11 @@ public class OrdersRepository : IOrderRepository
             .ToListAsync();
     }
 
+    public async Task<int> GetOrdersTotalAsync()
+    {
+        return await _context.Orders.CountAsync();
+    }
+
     public async Task<List<Orders>> GetOrdersByBillIdAsync(int billId)
     {
         return await _context.Orders

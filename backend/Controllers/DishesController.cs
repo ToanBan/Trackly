@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.DTOS;
 using MyApi.Services;
+using MyApi.Middleware;
 
 namespace MyApi.Controllers;
 
@@ -21,6 +22,7 @@ public class DishesController : ControllerBase
 
 
     [Authorize]
+    [Roles("admin")]
     [HttpPost]
     public async Task<IActionResult>AddDish([FromForm] CreateDish dish)
     {
@@ -52,6 +54,7 @@ public class DishesController : ControllerBase
     }
 
 
+    [Roles("admin")]
     [HttpDelete("{Id}")]
     public async Task<IActionResult>DeleteDishById(int Id)
     {
@@ -60,6 +63,7 @@ public class DishesController : ControllerBase
     }
 
 
+    [Roles("admin")]
     [HttpPut("{Id}")]
     public async Task<IActionResult>UpdateDishById(int Id, [FromForm] UpdateDish dish)
     {

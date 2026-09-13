@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -7,13 +7,21 @@ import { Label } from "@/components/ui/label"
 import { ApiError } from "@/api/client"
 import { useAuth } from "@/context/AuthContext"
 
+const googleErrorMessages: Record<string, string> = {
+  invalid_state: "Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.",
+  login_failed: "Đăng nhập Google thất bại. Vui lòng thử lại.",
+}
+
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { login } = useAuth()
+
+  const googleError = searchParams.get("googleError")
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -122,7 +130,11 @@ export default function Login() {
                   />
                 </div>
 
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {(error || (googleError && googleErrorMessages[googleError])) && (
+                  <p className="text-sm text-red-500">
+                    {error || googleErrorMessages[googleError!]}
+                  </p>
+                )}
 
                 <Button
                   type="submit"
@@ -142,7 +154,11 @@ export default function Login() {
                 </div>
               </div>
 
-              <Button className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              <Button
+                type="button"
+                onClick={() => { window.location.href = "/api/auth/google" }}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
                 Tiếp tục với Google
               </Button>
 

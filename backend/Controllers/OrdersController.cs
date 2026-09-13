@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.DTOS;
 using MyApi.Services;
+using MyApi.Middleware;
 
 namespace MyApi.Controllers;
 
@@ -46,14 +47,17 @@ public class OrdersController : ControllerBase
     }
 
     [Authorize]
+    [Roles("admin", "staff")]
     [HttpGet("orders")]
     public async Task<IActionResult> GetOrders(int page = 1, int limit = 10)
     {
         var orders = await _ordersService.GetOrdersAsync(page, limit);
-        return Ok(new { items = orders.Select(MapOrder) });
+        var total = await _ordersService.GetOrdersTotalAsync();
+        return Ok(new { items = orders.Select(MapOrder), total, page, limit });
     }
 
     [Authorize]
+    [Roles("admin", "staff")]
     [HttpGet("orders/{id}")]
     public async Task<IActionResult> GetOrder(int id)
     {
@@ -69,6 +73,7 @@ public class OrdersController : ControllerBase
     }
 
     [Authorize]
+    [Roles("admin", "staff")]
     [HttpPut("orders/{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusDTO dto)
     {

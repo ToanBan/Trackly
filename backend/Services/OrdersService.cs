@@ -141,6 +141,11 @@ public class OrdersService
         return await _orderRepository.GetOrdersAsync((page - 1) * limit, limit);
     }
 
+    public async Task<int> GetOrdersTotalAsync()
+    {
+        return await _orderRepository.GetOrdersTotalAsync();
+    }
+
     public async Task<Orders> GetOrderByIdAsync(int id)
     {
         var order = await _orderRepository.GetOrderByIdAsync(id);

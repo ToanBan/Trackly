@@ -36,11 +36,16 @@ public class JwtTokenService : IJwtTokenService
     private int RefreshExpiryDays =>
         int.Parse(_configuration["Authentication:RefreshToken:ExpirationDays"] ?? "7");
 
-    public string GenerateAccessToken(int userId, string email, string username)
+    public string GenerateAccessToken(int userId, string email, string username, List<string> roles)
     {
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AccessSecret)),
             SecurityAlgorithms.HmacSha256);
+
+        var roleClaims = (roles ?? new List<string>())
+            .Where(r => !string.IsNullOrEmpty(r))
+            .Select(r => new Claim(ClaimTypes.Role, r.Trim().ToLowerInvariant()))
+            .ToList();
 
         var claims = new[]
         {
@@ -51,7 +56,9 @@ public class JwtTokenService : IJwtTokenService
             new Claim(JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
                 ClaimValueTypes.Integer64)
-        };
+        }.ToList();
+
+        claims.AddRange(roleClaims);
 
         var token = new JwtSecurityToken(
             issuer: Issuer,

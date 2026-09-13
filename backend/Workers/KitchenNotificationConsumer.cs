@@ -70,7 +70,6 @@ public class KitchenNotificationConsumer : BackgroundService
         _connection = await factory.CreateConnectionAsync(stoppingToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        // Declare topology ở cả 2 bên (publisher + consumer) — idempotent, an toàn.
         await _channel.ExchangeDeclareAsync(
             exchange: ExchangeName, type: ExchangeType.Direct,
             durable: true, autoDelete: false, cancellationToken: stoppingToken);

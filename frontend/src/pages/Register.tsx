@@ -167,7 +167,11 @@ export default function Register() {
                 </div>
               </div>
 
-              <Button className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              <Button
+                type="button"
+                onClick={() => { window.location.href = "/api/auth/google" }}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
                 Tiếp tục với Google
               </Button>
 

@@ -54,6 +54,52 @@ public class UserService
         return await _userRepository.FindUserByEmailAsync(email);
     }
 
+
+    public Task<List<User>> GetUsersByRoleAsync(string role, int page, int limit)
+    {
+        if (page < 1) page = 1;
+        if (limit < 1) limit = 10;
+        return _userRepository.GetUsersByRoleAsync(role, (page - 1) * limit, limit);
+    }
+
+    public Task<int> CountUsersByRoleAsync(string role)
+    {
+        return _userRepository.CountUsersByRoleAsync(role);
+    }
+
+    public Task<List<CustomerLoyalty>> GetCustomersWithPointsAsync(int page, int limit)
+    {
+        if (page < 1) page = 1;
+        if (limit < 1) limit = 10;
+        return _userRepository.GetCustomersWithPointsAsync((page - 1) * limit, limit);
+    }
+
+    public async Task<User?> UpdateUserRolesAsync(int id, List<string> roles)
+    {
+        if (roles == null || roles.Count == 0)
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, "Roles must not be empty");
+        }
+
+        var normalized = roles
+            .Select(r => r.Trim().ToLowerInvariant())
+            .Where(r => r is "staff" or "user" or "admin")
+            .Distinct()
+            .ToList();
+
+        if (normalized.Count == 0)
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, "Invalid roles. Allowed: 'user', 'staff', 'admin'");
+        }
+
+        return await _userRepository.UpdateUserRolesAsync(id, normalized);
+    }
+
+    public Task<User> FindOrCreateGoogleUserAsync(string email, string name)
+    {
+        return _userRepository.FindOrCreateGoogleUserAsync(email.Trim().ToLowerInvariant(), name);
+    }
+
     public async Task<UserSessions> CreateUserSessionAsync(string refreshToken, int userId)
     {
         var userSession = new UserSessions

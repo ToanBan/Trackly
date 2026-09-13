@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 using MyApi.DTOS;
 using MyApi.Exceptions;
 using MyApi.Interfaces;
+using MyApi.Models;
 using MyApi.Services;
+using MyApi.Middleware;
 
 namespace MyApi.Controllers;
 
@@ -56,7 +58,7 @@ public class UserController : ControllerBase
                 return Unauthorized(new { message = "Invalid email or password" });
             }
 
-            var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username);
+            var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username, user.Roles);
             var refreshToken = _jwtTokenService.GenerateRefreshToken(user.Id);
 
             await _userService.CreateUserSessionAsync(refreshToken, user.Id);
@@ -126,8 +128,77 @@ public class UserController : ControllerBase
             return NotFound(new { message = "User not found" });
         }
 
-        return Ok(new { id = user.Id, username = user.Username, email = user.Email });
+        return Ok(new { id = user.Id, username = user.Username, email = user.Email, roles = user.Roles ?? new List<string>() });
     }
+
+
+    [Authorize]
+    [Roles("admin")]
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers(string role, int page = 1, int limit = 10)
+    {
+        try
+        {
+            var normalized = (role ?? "user").Trim().ToLowerInvariant();
+            if (normalized != "staff" && normalized != "user")
+            {
+                return BadRequest(new { message = "role must be 'staff' or 'user'" });
+            }
+
+            if (normalized == "user")
+            {
+                var customers = await _userService.GetCustomersWithPointsAsync(page, limit);
+                return Ok(new { items = customers });
+            }
+
+            var staff = await _userService.GetUsersByRoleAsync(normalized, page, limit);
+            var total = await _userService.CountUsersByRoleAsync(normalized);
+            return Ok(new
+            {
+                items = staff.Select(u => ToSummary(u)),
+                total,
+                page,
+                limit
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new { message = "An error occurred while loading users" });
+        }
+    }
+
+    [Authorize]
+    [Roles("admin")]
+    [HttpPut("users/{id}/roles")]
+    public async Task<IActionResult> UpdateUserRoles(int id, [FromBody] UpdateUserRolesDTO dto)
+    {
+        try
+        {
+            var user = await _userService.UpdateUserRolesAsync(id, dto.Roles);
+            if (user == null)
+            {
+                return NotFound(new { message = $"User with Id = {id} not found" });
+            }
+            return Ok(ToSummary(user));
+        }
+        catch (ApiException ex)
+        {
+            return StatusCode(ex.StatusCode, new { message = ex.Message });
+        }
+        catch
+        {
+            return StatusCode(500, new { message = "An error occurred while updating roles" });
+        }
+    }
+
+    private static object ToSummary(User user) => new
+    {
+        id = user.Id,
+        username = user.Username,
+        email = user.Email,
+        phoneNumber = user.PhoneNumber,
+        roles = user.Roles
+    };
 
 
     [HttpPost("refresh-token")]
@@ -141,19 +212,22 @@ public class UserController : ControllerBase
                 return BadRequest(new { message = "Refresh token is missing" });
             }
 
-            var userId = await _userService.ValidateRefreshTokenAsync(refreshToken);
-            if (userId == null)
+            var session = await _userService.ValidateRefreshTokenAsync(refreshToken);
+            if (session == null)
             {
                 return Unauthorized(new { message = "Invalid refresh token" });
             }
 
-            var user = await _userService.GetUserByIdAsync(userId.Id);
+            var user = await _userService.GetUserByIdAsync(session.UserId);
+            Console.WriteLine($"đáhjádjsakjdạ {user}");
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            var newAccessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username);
+        
+
+            var newAccessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email, user.Username, user.Roles);
             var newRefreshToken = _jwtTokenService.GenerateRefreshToken(user.Id);
 
             await _userService.UpdateUserSessionAsync(refreshToken, newRefreshToken, user.Id);

@@ -41,6 +41,11 @@ public class BillsService
         return await _billRepository.GetBillsAsync((page - 1) * limit, limit);
     }
 
+    public async Task<int> GetBillsTotalAsync()
+    {
+        return await _billRepository.GetBillsTotalAsync();
+    }
+
  
     public async Task<Bills> PayBillAsync(int billId, int? userId, PayBillDTO dto)
     {
