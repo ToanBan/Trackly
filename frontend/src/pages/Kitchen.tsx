@@ -1,88 +1,17 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   ChefHat, Clock, Flame, CheckCircle2, Timer, StickyNote,
-  PartyPopper, Inbox, RotateCcw, CheckCheck,
+  PartyPopper, Inbox, RotateCcw, CheckCheck, LogIn, RefreshCw, Wifi, WifiOff,
 } from "lucide-react"
-
-type OrderStatus = "waiting" | "cooking" | "done"
-
-type OrderItem = {
-  name: string
-  qty: number
-  note?: string
-}
-
-type Order = {
-  id: number
-  table: string
-  placedAt: number
-  status: OrderStatus
-  items: OrderItem[]
-}
-
-const now = Date.now()
-const min = 60_000
-
-const seedOrders: Order[] = [
-  {
-    id: 1042,
-    table: "12",
-    placedAt: now - 2 * min,
-    status: "waiting",
-    items: [
-      { name: "Phở bò đặc biệt", qty: 2 },
-      { name: "Sò điệp nướng", qty: 1, note: "Không cay" },
-    ],
-  },
-  {
-    id: 1043,
-    table: "05",
-    placedAt: now - 6 * min,
-    status: "cooking",
-    items: [
-      { name: "Bò nướng lá lốt", qty: 1 },
-      { name: "Cơm gà xối mỡ", qty: 2 },
-      { name: "Sinh tố mát", qty: 3 },
-    ],
-  },
-  {
-    id: 1044,
-    table: "21",
-    placedAt: now - 11 * min,
-    status: "cooking",
-    items: [
-      { name: "Bánh mì thịt nướng", qty: 4 },
-      { name: "Cà phê sữa đá", qty: 2, note: "Nhiều đá" },
-    ],
-  },
-  {
-    id: 1045,
-    table: "08",
-    placedAt: now - 16 * min,
-    status: "waiting",
-    items: [
-      { name: "Bún bò Huế", qty: 3 },
-      { name: "Phở bò đặc biệt", qty: 1 },
-    ],
-  },
-  {
-    id: 1046,
-    table: "03",
-    placedAt: now - 1 * min,
-    status: "waiting",
-    items: [{ name: "Cơm tấm sườn nướng", qty: 2 }],
-  },
-  {
-    id: 1039,
-    table: "17",
-    placedAt: now - 22 * min,
-    status: "done",
-    items: [
-      { name: "Heo rừng cuộn nướng", qty: 2 },
-      { name: "Sò điệp nướng", qty: 1 },
-    ],
-  },
-]
+import {
+  getOrders, updateOrderStatus,
+  type OrderResponse,
+} from "@/api/orders"
+import {
+  createKitchenConnection, mapOrder,
+  type KitchenOrder,
+} from "@/api/signalr"
 
 function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000))
@@ -92,7 +21,7 @@ function formatElapsed(ms: number): string {
 }
 
 function toneClass(elapsedMs: number): string {
-  const m = elapsedMs / min
+  const m = elapsedMs / 60_000
   if (m >= 12) return "text-red-600 bg-red-100"
   if (m >= 7) return "text-orange-600 bg-orange-100"
   return "text-amber-700 bg-amber-100"
@@ -103,23 +32,121 @@ const statusMeta = {
   cooking: { label: "ĐANG NẤU", bar: "bg-orange-400 text-black", Icon: Flame },
   done: { label: "HOÀN THÀNH", bar: "bg-emerald-500 text-white", Icon: CheckCircle2 },
 } as const
+
+type ConnState = "connecting" | "live" | "offline"
+
 export default function Kitchen() {
-  const [orders, setOrders] = useState(seedOrders)
+  const navigate = useNavigate()
+  const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [clock, setClock] = useState(Date.now())
   const [filter, setFilter] = useState<"open" | "done">("open")
+  const [needLogin, setNeedLogin] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [connState, setConnState] = useState<ConnState>("connecting")
+  const connRef = useRef<ReturnType<typeof createKitchenConnection> | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  /* ── Load danh sách đơn từ API ── */
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoadError(null)
+    try {
+      const data: OrderResponse[] = await getOrders()
+      setOrders(data.map(mapOrder))
+      setNeedLogin(false)
+      if (!silent) setLoadError(null)
+    } catch (err) {
+      const status = (err as { status?: number }).status
+      if (status === 401) {
+        setNeedLogin(true)
+      } else if (!silent) {
+        setLoadError(
+          err instanceof Error && err.message
+            ? err.message
+            : "Không thể tải đơn hàng. Vui lòng thử lại.",
+        )
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadOrders()
+  }, [loadOrders])
+
+  /* ── SignalR realtime: đơn mới đẩy ngay, reconnect thì resync ── */
+  useEffect(() => {
+    let cancelled = false
+    const conn = createKitchenConnection()
+    connRef.current = conn
+
+    conn.on("orderCreated", (o: OrderResponse) => {
+      // Bỏ qua đơn trùng (polling safety-net có thể đã lên trước đó)
+      setOrders((prev) =>
+        prev.some((x) => x.id === o.id) ? prev : [mapOrder(o), ...prev],
+      )
+    })
+
+    // Reconnect sau khi đứt mạng -> event trong khoảng đứt có thể lỡ
+    // -> resync bằng GET /orders (DB là nguồn sự thật).
+    conn.onreconnected(() => {
+      setConnState("live")
+      void loadOrders(true)
+    })
+
+    conn.onclose(() => setConnState("offline"))
+    conn.onreconnecting(() => setConnState("connecting"))
+
+    void conn
+      .start()
+      .then(() => conn.invoke("JoinKitchen"))
+      .then(() => {
+        if (!cancelled) setConnState("live")
+      })
+      .catch(() => {
+        if (!cancelled) setConnState("offline")
+      })
+
+    return () => {
+      cancelled = true
+      connRef.current = null
+      void conn.stop()
+    }
+  }, [loadOrders])
+
+  /* ── Safety-net polling: khi realtime chưa live, hỏi DB mỗi 30s ── */
+  useEffect(() => {
+    if (connState === "live") {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      return
+    }
+    pollingRef.current = setInterval(() => void loadOrders(true), 30_000)
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [connState, loadOrders])
+
+  /* ── Đổi trạng thái đơn: gọi API trước, state theo response server ── */
+  const toggleDone = async (id: number) => {
+    const current = orders.find((o) => o.id === id)
+    if (!current) return
+    const nextStatus = current.status === "done" ? "Preparing" : "Served"
+    try {
+      const updated = await updateOrderStatus(id, nextStatus)
+      setOrders((prev) => prev.map((o) => (o.id === id ? mapOrder(updated) : o)))
+    } catch {
+      // Lỗi -> giữ nguyên state, đơn vẫn hiển thị đúng server ở lần resync sau.
+    }
+  }
 
   useEffect(() => {
     const t = setInterval(() => setClock(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
-
-  const toggleDone = (id: number) => {
-    setOrders(
-      orders.map((o) =>
-        o.id === id ? { ...o, status: o.status === "done" ? "waiting" : "done" } : o,
-      ),
-    )
-  }
 
   const open = orders.filter((o) => o.status !== "done")
   const done = orders.filter((o) => o.status === "done")
@@ -128,6 +155,35 @@ export default function Kitchen() {
   const time = new Date(clock)
   const hh = time.getHours().toString().padStart(2, "0")
   const mm = time.getMinutes().toString().padStart(2, "0")
+
+  /* ── Chưa đăng nhập: endpoint GET /orders trả 401 ── */
+  if (needLogin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#ece7ff_0%,#e4efff_26%,#e7edf5_100%)] px-4">
+        <div className="w-full max-w-xl rounded-3xl border border-violet-100 bg-white/90 p-10 text-center shadow-[0_20px_50px_rgba(167,139,250,0.15)]">
+          <LogIn size={56} className="mx-auto text-violet-400" />
+          <h1 className="mt-4 text-3xl font-black text-slate-900">Cần đăng nhập</h1>
+          <p className="mt-2 text-slate-500">
+            Màn hình bếp yêu cầu đăng nhập bằng tài khoản nhân viên để xem đơn
+            hàng.
+          </p>
+          <button
+            onClick={() => navigate("/login")}
+            className="mt-6 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-8 py-3 font-bold text-white shadow-lg shadow-violet-200 transition hover:opacity-90"
+          >
+            Đi đến đăng nhập
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const connBadge =
+    connState === "live"
+      ? { text: "LIVE", cls: "bg-emerald-50 text-emerald-600", Icon: Wifi }
+      : connState === "connecting"
+        ? { text: "Đang kết nối", cls: "bg-amber-50 text-amber-600", Icon: RefreshCw }
+        : { text: "Offline", cls: "bg-rose-50 text-rose-500", Icon: WifiOff }
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#ece7ff_0%,#e4efff_26%,#e7edf5_100%)] text-slate-800">
@@ -143,11 +199,29 @@ export default function Kitchen() {
               <p className="text-sm text-slate-500">Màn hình theo dõi đơn hàng của bếp</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-white/80 px-4 py-2">
-            <Clock size={28} className="text-violet-500" />
-            <span className="text-4xl font-black tabular-nums text-slate-800">{hh}:{mm}</span>
+          <div className="flex items-center gap-3">
+            {/* Badge trạng thái realtime — bếp biết ngay khi kết nối rớt */}
+            <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black ${connBadge.cls}`}>
+              <connBadge.Icon size={14} /> {connBadge.text}
+            </span>
+            <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-white/80 px-4 py-2">
+              <Clock size={28} className="text-violet-500" />
+              <span className="text-4xl font-black tabular-nums text-slate-800">{hh}:{mm}</span>
+            </div>
           </div>
         </header>
+
+        {loadError && (
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3">
+            <p className="text-sm font-bold text-rose-600">{loadError}</p>
+            <button
+              onClick={() => void loadOrders()}
+              className="rounded-full bg-rose-600 px-4 py-1.5 text-xs font-black text-white hover:bg-rose-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
           <button

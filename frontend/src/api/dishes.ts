@@ -29,6 +29,12 @@ export function resolveImageUrl(path: string | null): string | null {
   return `${origin}${path.startsWith("/") ? "" : "/"}${path}`
 }
 
+
+export async function getDish(id: number): Promise<Dish> {
+  const { data } = await api.get<Dish>(`/dishes/${id}`)
+  return data
+}
+
 export async function listDishes(limit = 20, page = 1): Promise<Dish[]> {
   const { data } = await api.get<Dish[]>("/dishes", { params: { limit, page } })
   return data

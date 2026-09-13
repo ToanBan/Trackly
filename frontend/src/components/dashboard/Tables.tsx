@@ -59,18 +59,29 @@ export default function Tables() {
   // Tải danh sách bàn từ backend pe paginat (limit PAGE_SIZE).
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    void (async () => {
+
+    const fetchTables = async (silent = false) => {
+      if (!silent) setLoading(true)
       try {
         const tables = await getTables(page, PAGE_SIZE)
         if (!cancelled) setItems(tables.map(mapApiTable))
       } catch {
         // giữ rỗng nếu backend chưa disponible
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && !silent) setLoading(false)
       }
-    })()
-    return () => { cancelled = true }
+    }
+
+    void fetchTables()
+
+    // Polling 30s: cập nhật trạng thái bàn (khách quét QR -> occupied,
+    // thanh toán -> available) mà không cần reload trang dashboard.
+    const poll = setInterval(() => void fetchTables(true), 30_000)
+
+    return () => {
+      cancelled = true
+      clearInterval(poll)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
 

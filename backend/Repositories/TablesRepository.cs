@@ -63,6 +63,18 @@ public class TablesRepository : ITablesRepository
         return table;
     }
 
+    public async Task<bool> UpdateTableStatusAsync(int id, string status)
+    {
+        var table = await _context.Tables.FindAsync(id);
+        if (table == null)
+        {
+            return false;
+        }
+        table.Status = status;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<List<Tables>> GetTablesAsync(int offset, int limit)
     {
         return await _context.Tables

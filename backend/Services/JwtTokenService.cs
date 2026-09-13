@@ -153,7 +153,7 @@ public class JwtTokenService : IJwtTokenService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Expires = DateTimeOffset.UtcNow.AddMinutes(AccessExpiryMinutes)
         });
 
@@ -161,7 +161,7 @@ public class JwtTokenService : IJwtTokenService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Expires = DateTimeOffset.UtcNow.AddDays(RefreshExpiryDays)
         });
     }
@@ -172,7 +172,7 @@ public class JwtTokenService : IJwtTokenService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Expires = DateTimeOffset.UtcNow.AddDays(TableExpiryDays)
         });
     }

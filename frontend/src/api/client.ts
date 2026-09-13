@@ -72,6 +72,7 @@ api.interceptors.response.use(
 
       try {
         await doRefreshTokens()
+        console.log("đã gọi refresh token")
       } catch {
         console.error("Auto refresh token failed; request will not be retried.", error.response?.status)
         return Promise.reject(new ApiError(status, message))

@@ -47,6 +47,21 @@ public class TablesService
         {
             return null;
         }
+
+        // Khách quét QR = bắt đầu phiên ngồi -> bàn chuyển sang occupied.
+        // Idempotent: quét lại nhiều lần (refresh, người khác cùng bàn) vẫn OK.
+        // Lỗi chỉ log — việc chính là cấp token cho khách vào menu, không chặn.
+        try
+        {
+            await _tablesRepository.UpdateTableStatusAsync(existed.Id, "occupied");
+        }
+        catch (Exception ex)
+        {
+            // TablesService chưa có logger riêng — để lỗi nổi qua controller? Không:
+            // nuốt để không chặn cấp token.
+            Console.WriteLine($"[TablesService] Update table status failed: {ex.Message}");
+        }
+
         return _jwtTokenService.GenerateTableToken(slug);
     }
 

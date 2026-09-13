@@ -19,6 +19,8 @@ export default defineConfig({
       "/api": { target: "http://localhost:5289", changeOrigin: true },
       "/categories": { target: "http://localhost:5289", changeOrigin: true },
       "/dishes": { target: "http://localhost:5289", changeOrigin: true },
+      // SignalR hub — ws: true bắt buộc để WebSocket handshake đi qua proxy ở dev
+      "/hubs": { target: "http://localhost:5289", changeOrigin: true, ws: true },
     },
   },
 })

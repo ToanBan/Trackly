@@ -9,10 +9,19 @@ public class DishesService
 {
     private readonly IDishRepository _dishRepository;
     private readonly IWebHostEnvironment _environment;
-    public DishesService(IDishRepository dishRepository, IWebHostEnvironment environment)
+    private readonly ICacheInterface _cache;
+
+    private const string ListCachePrefix = "dishes:list:";
+    private const string DetailCachePrefix = "dish:detail:";
+    private const string CategoriesCachePrefix = "categories:list:";
+    private static readonly TimeSpan ListCacheTtl = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan DetailCacheTtl = TimeSpan.FromMinutes(2);
+
+    public DishesService(IDishRepository dishRepository, IWebHostEnvironment environment, ICacheInterface cache)
     {
         _dishRepository = dishRepository;
         _environment = environment;
+        _cache = cache;
     }
 
     public async Task<Dishes> AddDish(CreateDish dish, int userId)
@@ -52,6 +61,8 @@ public class DishesService
             IsAvailable=true
         };
         await _dishRepository.AddDishAsync(newDish);
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(CategoriesCachePrefix);
         return newDish;
     }
 
@@ -60,18 +71,39 @@ public class DishesService
     {
         if (page < 1) page = 1;
         if (limit < 1) limit = 10;
+
+        var key = $"{ListCachePrefix}{limit}:{page}";
+        var cached = await _cache.GetAsync<List<Dishes>>(key);
+        if (cached != null)
+        {
+            return cached;
+        }
+
         var offset = (page - 1) * limit;
         var dishes = await _dishRepository.GetListDishesAsync(limit, offset);
+
+        await _cache.SetAsync(key, dishes, ListCacheTtl);
         return dishes;
     }
 
     public async Task<Dishes> GetDishDetail(int Id)
     {
+        // Read-through cache: return early on cache hit.
+        var key = $"{DetailCachePrefix}{Id}";
+        var cached = await _cache.GetAsync<Dishes>(key);
+        if (cached != null)
+        {
+            return cached;
+        }
+
         var existed = await _dishRepository.GetDishByIdAsync(Id);
         if (existed == null)
         {
             throw new Exception("Not Found");
         }
+
+        // Negative results are not cached; only successful fetches are cached.
+        await _cache.SetAsync(key, existed, DetailCacheTtl);
         return existed;
     }
 
@@ -85,6 +117,9 @@ public class DishesService
         }
 
         await _dishRepository.DeleteDishByIdAsync(Id);
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(CategoriesCachePrefix);
+        await _cache.RemoveAsync($"{DetailCachePrefix}{Id}");
         return true;
     }
 
@@ -134,6 +169,10 @@ public class DishesService
         existed.Price = dish.Price ?? existed.Price;
         existed.IsAvailable = dish.IsAvailable ?? existed.IsAvailable;
         var updateDish = await _dishRepository.UpdateDishByIdAsync(Id, existed);
+
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(CategoriesCachePrefix);
+        await _cache.RemoveAsync($"{DetailCachePrefix}{Id}");
         return updateDish;
     }
 }

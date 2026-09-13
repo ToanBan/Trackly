@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { getMyLoyalty, type LoyaltyResponse } from "@/api/loyalty"
 import {
   User as UserIcon, Mail, Lock, LogOut, Pencil, Check, X, Eye, EyeOff,
   ChefHat, UtensilsCrossed, Flame, Star, ShieldAlert, Camera, Sparkles,
@@ -21,6 +22,29 @@ export default function Profile() {
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" })
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false })
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  /* ── Điểm tích luỹ (Loyalty) ── */
+  const [loyalty, setLoyalty] = useState<LoyaltyResponse | null>(null)
+  const [loyaltyLoading, setLoyaltyLoading] = useState(true)
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null)
+
+  const loadLoyalty = () => {
+    setLoyaltyLoading(true)
+    setLoyaltyError(null)
+    getMyLoyalty()
+      .then(setLoyalty)
+      .catch(() => setLoyaltyError("Không thể tải điểm tích luỹ. Vui lòng thử lại."))
+      .finally(() => setLoyaltyLoading(false))
+  }
+
+  useEffect(() => {
+    loadLoyalty()
+  }, [])
+
+  // Tiến độ tới 400 điểm (ngưỡng đổi giảm 10% hóa đơn), clamp 0–100%
+  const redeemTarget = 400
+  const progress =
+    loyalty == null ? 0 : Math.min(100, Math.round((loyalty.points / redeemTarget) * 100))
 
   if (!user) {
     return (
@@ -147,7 +171,7 @@ export default function Profile() {
           {[
             { Icon: ChefHat, label: "Món đã theo dõi", value: "128", cls: "from-violet-500 to-fuchsia-500 shadow-violet-200" },
             { Icon: Flame, label: "Chuỗi ngày liên tục", value: "14", cls: "from-orange-400 to-rose-500 shadow-rose-200" },
-            { Icon: TrendingUp, label: "Điểm tích luỹ", value: "2.350", cls: "from-cyan-400 to-blue-500 shadow-cyan-200" },
+            { Icon: TrendingUp, label: "Điểm tích luỹ", value: loyaltyLoading ? "..." : (loyalty?.points.toLocaleString("vi-VN") ?? "0"), cls: "from-cyan-400 to-blue-500 shadow-cyan-200" },
           ].map(({ Icon, label, value, cls }) => (
             <div key={label} className="flex items-center gap-4 rounded-3xl border border-white bg-white/85 p-5 shadow-[0_12px_30px_rgba(167,139,250,0.10)] backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(167,139,250,0.18)]">
               <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${cls} text-white shadow-lg`}>
@@ -159,6 +183,106 @@ export default function Profile() {
               </div>
             </div>
           ))}
+        </section>
+
+        {/* ── Điểm tích luỹ (Loyalty) ── */}
+        <section className="mt-5 rounded-3xl border border-violet-100 bg-white/90 p-6 shadow-[0_12px_30px_rgba(167,139,250,0.10)] backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+              <Sparkles size={18} className="text-cyan-500" /> Điểm tích luỹ
+            </h2>
+            {loyaltyError && (
+              <button
+                onClick={loadLoyalty}
+                className="rounded-full border border-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+              >
+                Thử lại
+              </button>
+            )}
+          </div>
+
+          {loyaltyLoading ? (
+            <div className="mt-6 flex items-center justify-center py-6">
+              <div className="h-9 w-9 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600" />
+            </div>
+          ) : loyaltyError ? (
+            <p className="mt-4 rounded-2xl bg-rose-50 py-3 text-center text-sm font-bold text-rose-600">
+              {loyaltyError}
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-black text-slate-900">
+                    {(loyalty?.points ?? 0).toLocaleString("vi-VN")}
+                  </p>
+                  <span className="text-sm font-bold text-slate-400">điểm</span>
+                </div>
+                <p className="text-xs font-semibold text-slate-500">
+                  Đổi {redeemTarget} điểm để nhận giảm 10% hóa đơn
+                </p>
+              </div>
+
+              {/* Thanh tiến độ tới ngưỡng 400 điểm */}
+              <div className="mt-3">
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-xs font-semibold text-slate-400">
+                  {progress >= 100
+                    ? "Bạn đã đủ điểm để đổi ưu đãi!"
+                    : `Còn ${redeemTarget - (loyalty?.points ?? 0)} điểm nữa đến ưu đãi (${progress}%)`}
+                </p>
+              </div>
+
+              {/* Lịch sử điểm */}
+              <div className="mt-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Lịch sử điểm
+                </p>
+                {(loyalty?.history?.length ?? 0) === 0 ? (
+                  <p className="mt-3 rounded-2xl bg-slate-50 py-4 text-center text-sm font-semibold text-slate-400">
+                    Bạn chưa có điểm nào — đặt món để bắt đầu tích điểm!
+                  </p>
+                ) : (
+                  <ul className="mt-3 divide-y divide-slate-100">
+                    {loyalty!.history.slice(0, 5).map((h) => (
+                      <li key={h.id} className="flex items-center gap-3 py-2.5">
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                            h.type === "earn"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-orange-50 text-orange-500"
+                          }`}
+                        >
+                          {h.type === "earn" ? "+" : "−"}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-700">
+                            {h.description}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {new Date(h.createdAt).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-sm font-black ${
+                            h.points >= 0 ? "text-emerald-600" : "text-rose-500"
+                          }`}
+                        >
+                          {h.points >= 0 ? "+" : "−"}
+                          {Math.abs(h.points)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         {/* ── Nội dung 2 cột ── */}

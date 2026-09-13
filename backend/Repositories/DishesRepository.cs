@@ -24,6 +24,7 @@ public class DishesRepository : IDishRepository
     {
 
         return await _context.dishes
+            .Include(d => d.categories)
             .OrderByDescending(d => d.Id)
             .Skip(offset)
             .Take(limit)
@@ -32,7 +33,9 @@ public class DishesRepository : IDishRepository
 
     public async Task<Dishes> GetDishByIdAsync(int Id)
     {
-        var dish = await _context.dishes.FindAsync(Id);
+        var dish = await _context.dishes
+            .Include(d => d.categories)
+            .FirstOrDefaultAsync(d => d.Id == Id);
         if (dish == null)
         {
             throw new KeyNotFoundException($"Không tìm thấy dish với Id = {Id}");

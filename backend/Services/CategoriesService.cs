@@ -9,11 +9,18 @@ public class CategoriesService
 {
     private readonly ICategoriesRepository _categoryService;
     private readonly IWebHostEnvironment _environment;
-    public CategoriesService(ICategoriesRepository categoryService, IWebHostEnvironment environment)
+    private readonly ICacheInterface _cache;
+
+    private const string ListCachePrefix = "categories:list:";
+    private const string DishesCachePrefix = "dishes:list:";
+    private const string DishDetailCachePrefix = "dish:detail:";
+    private static readonly TimeSpan ListCacheTtl = TimeSpan.FromMinutes(1);
+
+    public CategoriesService(ICategoriesRepository categoryService, IWebHostEnvironment environment, ICacheInterface cache)
     {
         _categoryService = categoryService;
         _environment = environment;
-
+        _cache = cache;
     }
 
     public async Task<Categories> CreateCategory(CreateCategory category, int userId)
@@ -46,6 +53,9 @@ public class CategoriesService
             IsActive=true
         };
         await _categoryService.AddCategoryAsync(newCategory);
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishesCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishDetailCachePrefix);
         return newCategory;
 
     }
@@ -55,8 +65,20 @@ public class CategoriesService
     {
         if (page < 1) page = 1;
         if (limit < 1) limit = 10;
+
+        // Read-through cache: return early on cache hit.
+        var key = $"{ListCachePrefix}{limit}:{page}";
+        var cached = await _cache.GetAsync<List<Categories>>(key);
+        if (cached != null)
+        {
+            return cached;
+        }
+
         int offset = (page - 1) * limit;
         List<Categories> categories = await _categoryService.GetListCategoriesAsync(limit, offset);
+
+        // Populate the cache so subsequent requests hit Redis.
+        await _cache.SetAsync(key, categories, ListCacheTtl);
         return categories;
     }
 
@@ -78,6 +100,9 @@ public class CategoriesService
             return false;
         }
         await _categoryService.DeleteCategoryByIdAsync(Id);
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishesCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishDetailCachePrefix);
         return true;
     }
 
@@ -125,6 +150,9 @@ public class CategoriesService
         existed.ImageUrl = newImagePath;
         existed.IsActive = category.IsActive ?? existed.IsActive;
         var updateCategory = await _categoryService.UpdateCategoryAsync(Id, existed);
+        await _cache.RemoveByPrefixAsync(ListCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishesCachePrefix);
+        await _cache.RemoveByPrefixAsync(DishDetailCachePrefix);
         return updateCategory;
     }
 

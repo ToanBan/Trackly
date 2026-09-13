@@ -12,6 +12,9 @@ public interface ITablesRepository{
 
     public Task<Tables>GetTableBySlugAsync(string slug);
 
+    // Cập nhật riêng Status bàn (occupied/available) — không đụng TableNumber/QrCodeUrl.
+    public Task<bool>UpdateTableStatusAsync(int id, string status);
+
     public Task<List<Tables>>GetTablesAsync(int offset, int limit);
 
 }

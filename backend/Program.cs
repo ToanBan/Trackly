@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using MyApi.Data;
+using MyApi.Hubs;
 using MyApi.Interfaces;
 using MyApi.Repositories;
 using MyApi.Services;
+using MyApi.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +41,18 @@ builder.Services.AddScoped<ICategoriesRepository, CategoriesRepository>();
 builder.Services.AddScoped<CategoriesService>();
 builder.Services.AddScoped<IDishRepository, DishesRepository>();
 builder.Services.AddScoped<DishesService>();
+builder.Services.AddScoped<IOrderRepository, OrdersRepository>();
+builder.Services.AddScoped<IBillRepository, BillsRepository>();
+builder.Services.AddScoped<ILoyaltyRepository, LoyaltyRepository>();
+builder.Services.AddScoped<OrdersService>();
+builder.Services.AddScoped<BillsService>();
+builder.Services.AddScoped<LoyaltyService>();
+
+// SignalR + RabbitMQ realtime (đơn mới đẩy realtime cho trang bếp)
+builder.Services.AddSignalR();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddHostedService<KitchenNotificationConsumer>();
 
 // JWT authentication
 var accessSecret = builder.Configuration["Authentication:AccessToken:SecretKey"];
@@ -121,5 +135,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SignalR hub — trang bếp kết nối vào đây để nhận event realtime
+app.MapHub<KitchenHub>("/hubs/kitchen");
 
 app.Run();
